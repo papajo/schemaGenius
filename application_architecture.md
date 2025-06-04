@@ -1,6 +1,6 @@
 # Application Architecture
 
-This document outlines the architecture of the application, detailing its main components, suggested technology stack, communication flow, and data representation.
+This document outlines the architecture of the application, detailing its main components, suggested technology stack, communication flow, and relevant data representation.
 
 ## 1. Main Components
 
