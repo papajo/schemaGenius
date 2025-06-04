@@ -6,7 +6,7 @@ SchemaGenius is a planned application designed to automatically generate databas
 
 ## Current Status
 
-This repository currently contains the **initial design documents** for the SchemaGenius application. The work done so far focuses on outlining the architecture, features, user experience, and technical considerations for building the application. No implementation has begun yet.
+This repository currently contains the **initial design documents** and **basic project scaffolding** for the SchemaGenius application. The work done so far focuses on outlining the architecture, features, user experience, technical considerations, and setting up the initial directory structure.
 
 ## Design Documents
 
@@ -21,11 +21,40 @@ The core design of SchemaGenius is detailed in the following documents:
     *   `scalability_performance.md`: Identifies potential bottlenecks and proposes solutions for scalability and performance across the application.
     *   `application_documentation_structure.md`: Outlines the structure for user guides, FAQs, and other support materials for the application.
 
+## Project Structure
+
+The initial project structure has been scaffolded as follows:
+
+*   **`backend/`**: Contains the Python FastAPI backend application.
+    *   `app/`: Main application code.
+        *   `main.py`: FastAPI app initialization.
+        *   `api/`: API endpoint definitions.
+        *   `core/`: Core logic, including the `parsing_engine/`.
+            *   `parsing_engine/`: Modules for parsing inputs and generating schemas (currently placeholders).
+        *   `schemas/`: Pydantic models for data validation and serialization.
+        *   `services/`: Business logic services.
+    *   `requirements.txt`: Backend dependencies.
+    *   `.gitignore`: Python-specific ignore file.
+
+*   **`frontend/`**: Contains the React with TypeScript frontend application.
+    *   `public/`: Static assets and `index.html`.
+    *   `src/`: Frontend source code (`.tsx` files, CSS, etc.).
+        *   `App.tsx`: Main React application component.
+        *   `index.tsx`: React DOM entry point.
+        *   `components/`: Reusable UI components.
+        *   `pages/`: Top-level page components.
+        *   `services/`: Functions for making API calls to the backend.
+    *   `package.json`: Frontend dependencies and scripts.
+    *   `tsconfig.json`: TypeScript configuration.
+    *   `.gitignore`: Node.js/React-specific ignore file.
+
+*   **Design Documents**: All files ending with `.md` at the root level (e.g., `architecture.md`, `final_design_document.md`) are design specifications.
+
 ## Future Work
 
-The next phase for this project will be the implementation of the SchemaGenius application based on the designs outlined in these documents. This will involve:
+The next phase for this project will be the implementation of the SchemaGenius application based on the designs and scaffolding outlined in these documents. This will involve:
 
-1.  Setting up the development environment.
+1.  Populating placeholder files with actual code.
 2.  Developing the backend API and parsing engine.
 3.  Building the frontend user interface.
 4.  Implementing the schema generation, validation, and export functionalities.
@@ -33,4 +62,4 @@ The next phase for this project will be the implementation of the SchemaGenius a
 
 ---
 
-*This README provides an overview of the design phase of the SchemaGenius project.*
+*This README provides an overview of the design and initial scaffolding phase of the SchemaGenius project.*
