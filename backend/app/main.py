@@ -1,11 +1,20 @@
+# backend/app/main.py
+
 from fastapi import FastAPI
+from app.api.endpoints import generate as generate_router # Alias to avoid name clash
 
-app = FastAPI(title="SchemaGenius API")
+app = FastAPI(
+    title="SchemaGenius API",
+    description="API for automatically generating database schemas from various inputs.",
+    version="0.1.0"
+)
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to SchemaGenius API"}
+# Include routers
+app.include_router(generate_router.router, prefix="/api/v1", tags=["Schema Generation"])
 
-# Further endpoints will be added in api/
-# Example: from .api import users_router
-# app.include_router(users_router, prefix="/users", tags=["users"])
+@app.get("/", tags=["Root"])
+async def read_root():
+    return {"message": "Welcome to the SchemaGenius API. See /docs for API documentation."}
+
+# To run this application (from backend/ directory):
+# uvicorn app.main:app --reload

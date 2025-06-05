@@ -6,20 +6,20 @@ SchemaGenius is a planned application designed to automatically generate databas
 
 ## Current Status
 
-This repository currently contains the **initial design documents** and **basic project scaffolding** for the SchemaGenius application. The work done so far focuses on outlining the architecture, features, user experience, technical considerations, and setting up the initial directory structure.
+This repository currently contains the **initial design documents**, **basic project scaffolding**, and a **foundational API layer** for the SchemaGenius application. Key functionalities like JSON parsing and MySQL DDL generation are implemented in the backend, accessible via an API endpoint.
 
 ## Design Documents
 
 The core design of SchemaGenius is detailed in the following documents:
 
 *   **`final_design_document.md`**: A comprehensive document consolidating all aspects of the application's design.
-    *   `architecture.md`: Outlines the core components (Frontend, Backend API, Parsing & Analysis Engine, Application Database), their technologies, and communication flows.
-    *   `parsing_engine_details.md`: Details the specifics of the Parsing and Analysis Engine, including various input parsers, NLP approach, schema inference logic, and database-specific adapters.
-    *   `ui_ux_design.md`: Describes the user interface with textual wireframes for key screens, details the user journey, and specifies UI elements for schema visualization and manipulation.
-    *   `validation_error_handling.md`: Defines the strategy for schema validation at different stages, how errors are communicated, and the types of suggestions offered.
-    *   `export_formats_options.md`: Specifies the structure of export formats (SQL DDL, JSON, XML) and user-configurable options during export.
-    *   `scalability_performance.md`: Identifies potential bottlenecks and proposes solutions for scalability and performance across the application.
-    *   `application_documentation_structure.md`: Outlines the structure for user guides, FAQs, and other support materials for the application.
+    *   `architecture.md`
+    *   `parsing_engine_details.md`
+    *   `ui_ux_design.md`
+    *   `validation_error_handling.md`
+    *   `export_formats_options.md`
+    *   `scalability_performance.md`
+    *   `application_documentation_structure.md`
 
 ## Project Structure
 
@@ -28,38 +28,83 @@ The initial project structure has been scaffolded as follows:
 *   **`backend/`**: Contains the Python FastAPI backend application.
     *   `app/`: Main application code.
         *   `main.py`: FastAPI app initialization.
-        *   `api/`: API endpoint definitions.
+        *   `api/`: API endpoint definitions (e.g., schema generation).
         *   `core/`: Core logic, including the `parsing_engine/`.
-            *   `parsing_engine/`: Modules for parsing inputs and generating schemas (currently placeholders).
-        *   `schemas/`: Pydantic models for data validation and serialization.
-        *   `services/`: Business logic services.
+            *   `parsing_engine/`: Modules for parsing inputs and generating schemas.
+                *   `__init__.py`: Main `ParsingEngine` class.
+                *   `intermediate_schema.py`: Defines `SchemaISR` and related classes.
+                *   `parsers/`: Input-specific parsers (e.g., `json_parser.py`).
+                *   `adapters/`: Database-specific DDL generators (e.g., `mysql_adapter.py`).
+        *   `schemas/`: Pydantic models for API request/response validation.
     *   `requirements.txt`: Backend dependencies.
-    *   `.gitignore`: Python-specific ignore file.
+    *   `tests/`: Unit and integration tests for the backend.
+        *   `api/`: Tests for API endpoints.
+        *   `parsing_engine/`: Tests for parsing logic and adapters.
 
-*   **`frontend/`**: Contains the React with TypeScript frontend application.
+*   **`frontend/`**: Contains the React with TypeScript frontend application (currently placeholder).
     *   `public/`: Static assets and `index.html`.
-    *   `src/`: Frontend source code (`.tsx` files, CSS, etc.).
-        *   `App.tsx`: Main React application component.
-        *   `index.tsx`: React DOM entry point.
-        *   `components/`: Reusable UI components.
-        *   `pages/`: Top-level page components.
-        *   `services/`: Functions for making API calls to the backend.
+    *   `src/`: Frontend source code.
     *   `package.json`: Frontend dependencies and scripts.
-    *   `tsconfig.json`: TypeScript configuration.
-    *   `.gitignore`: Node.js/React-specific ignore file.
 
-*   **Design Documents**: All files ending with `.md` at the root level (e.g., `architecture.md`, `final_design_document.md`) are design specifications.
+*   **Design Documents**: All files ending with `.md` at the root level.
+
+## Running the Backend & API
+
+The backend is built using FastAPI. To run it locally:
+
+1.  Navigate to the `backend/` directory:
+    ```bash
+    cd backend
+    ```
+2.  Create a virtual environment and activate it (recommended):
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+3.  Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  Run the Uvicorn server:
+    ```bash
+    uvicorn app.main:app --reload
+    ```
+The API will typically be available at `http://127.0.0.1:8000`. You can access the interactive API documentation (Swagger UI) at `http://127.0.0.1:8000/docs`.
+
+### API Endpoints
+
+**POST /api/v1/schema/generate/**
+
+*   **Purpose**: Generates a database schema DDL based on the provided input.
+*   **Request Body**: `SchemaGenerationRequest` (see `backend/app/schemas/request_models.py`)
+    *   `input_data` (string): The raw input (e.g., JSON string of schema definition).
+    *   `input_type` (string): Type of input (e.g., "json").
+    *   `target_db` (string, optional): Target database (e.g., "mysql").
+*   **Response Body**: `SchemaGenerationResponse` (see `backend/app/schemas/response_models.py`)
+    *   `output_ddl` (string, optional): The generated DDL.
+    *   `error_message` (string, optional): Error details if generation failed.
+*   **Example `curl` request**:
+    ```bash
+    curl -X POST "http://127.0.0.1:8000/api/v1/schema/generate/" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "input_data": "{\"schema_name\": \"MyCurlDB\", \"tables\": [{\"name\": \"test_table\", \"columns\": [{\"name\": \"col1\", \"generic_type\": \"STRING\"}]}]}",
+      "input_type": "json",
+      "target_db": "mysql"
+    }'
+    ```
 
 ## Future Work
 
-The next phase for this project will be the implementation of the SchemaGenius application based on the designs and scaffolding outlined in these documents. This will involve:
+The next phases for this project will involve:
 
-1.  Populating placeholder files with actual code.
-2.  Developing the backend API and parsing engine.
-3.  Building the frontend user interface.
-4.  Implementing the schema generation, validation, and export functionalities.
-5.  Thorough testing and iteration.
+1.  Implementing more parsers (SQL DDL, Python ORM, NLP, etc.).
+2.  Implementing more adapters (PostgreSQL, MongoDB, etc.).
+3.  Developing the frontend user interface for easier interaction.
+4.  Enhancing error handling, validation, and schema enrichment capabilities.
+5.  Adding features like schema visualization and direct editing.
+6.  Thorough testing and iteration across all components.
 
 ---
 
-*This README provides an overview of the design and initial scaffolding phase of the SchemaGenius project.*
+*This README provides an overview of the SchemaGenius project, its current development status, and how to run the backend API.*
