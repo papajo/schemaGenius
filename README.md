@@ -1,12 +1,14 @@
-# SchemaGenius - Automatic Database Schema Generation (Design Phase)
+# SchemaGenius - Automatic Database Schema Generation
 
 ## Description
-
-SchemaGenius is a planned application designed to automatically generate database schemas based on various user inputs. This includes code snippets (SQL, Python ORMs, Java JPA), natural language descriptions, and structured data files (CSV, JSON). The goal is to provide an intelligent, user-friendly tool that streamlines the initial phases of database design.
+SchemaGenius is an application designed to automatically generate database schemas based on various user inputs. This includes code snippets (SQL, Python ORMs, Java JPA), natural language descriptions, and structured data files (CSV, JSON). The goal is to provide an intelligent, user-friendly tool that streamlines the initial phases of database design.
 
 ## Current Status
 
-This repository currently contains the **initial design documents**, **basic project scaffolding**, and a **foundational API layer** for the SchemaGenius application. Key functionalities like JSON, basic SQL DDL, and CSV parsing, along with MySQL DDL generation, are implemented in the backend and accessible via an API endpoint.
+This repository currently contains the **initial design documents**, **basic project scaffolding**, and a **foundational API layer** for the SchemaGenius application. Key functionalities implemented include:
+*   **Parsers**: JSON, basic SQL DDL, CSV.
+*   **Adapters**: MySQL DDL, PostgreSQL DDL.
+These are accessible via an API endpoint.
 
 ## Design Documents
 
@@ -34,7 +36,7 @@ The initial project structure has been scaffolded as follows:
                 *   `__init__.py`: Main `ParsingEngine` class.
                 *   `intermediate_schema.py`: Defines `SchemaISR` and related classes.
                 *   `parsers/`: Input-specific parsers (e.g., `json_parser.py`, `sql_parser.py`, `csv_parser.py`).
-                *   `adapters/`: Database-specific DDL generators (e.g., `mysql_adapter.py`).
+                *   `adapters/`: Database-specific DDL generators (e.g., `mysql_adapter.py`, `postgresql_adapter.py`).
         *   `schemas/`: Pydantic models for API request/response validation.
     *   `requirements.txt`: Backend dependencies.
     *   `tests/`: Unit and integration tests for the backend.
@@ -81,38 +83,48 @@ The API will typically be available at `http://127.0.0.1:8000`. You can access t
 *   **Request Body**: `SchemaGenerationRequest` (see `backend/app/schemas/request_models.py` and interactive `/docs`)
     *   `input_data` (string): The raw input (e.g., JSON string, SQL DDL statements, CSV data).
     *   `input_type` (string): Type of input (e.g., "json", "sql", "csv").
-    *   `target_db` (string, optional): Target database (e.g., "mysql").
-    *   `source_name` (string, optional): Suggested table name or source identifier (e.g., for CSV data, this might become the table name if provided).
+    *   `target_db` (string, optional): Target database (e.g., "mysql", "postgresql", "postgres").
+    *   `source_name` (string, optional): Suggested table name or source identifier (e.g., for CSV data).
 *   **Response Body**: `SchemaGenerationResponse` (see `backend/app/schemas/response_models.py` and interactive `/docs`)
-*   **Example `curl` request (JSON input)**:
+*   **Example `curl` request (JSON to MySQL DDL)**:
     ```bash
     curl -X POST "http://127.0.0.1:8000/api/v1/schema/generate/" \
     -H "Content-Type: application/json" \
     -d '{
-      "input_data": "{\"schema_name\": \"MyCurlDB\", \"tables\": [{\"name\": \"test_table\", \"columns\": [{\"name\": \"col1\", \"generic_type\": \"STRING\"}]}]}",
+      "input_data": "{\"schema_name\": \"MyCurlDB_MySQL\", \"tables\": [{\"name\": \"test_mysql_table\", \"columns\": [{\"name\": \"col1\", \"generic_type\": \"STRING\"}]}]}",
       "input_type": "json",
       "target_db": "mysql"
     }'
     ```
-*   **Example `curl` request (SQL DDL input)**:
+*   **Example `curl` request (SQL DDL to PostgreSQL DDL)**:
     ```bash
     curl -X POST "http://127.0.0.1:8000/api/v1/schema/generate/" \
     -H "Content-Type: application/json" \
     -d '{
-      "input_data": "CREATE TABLE customers (id INT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE); CREATE TABLE orders (order_id INT PRIMARY KEY, customer_id INT);",
+      "input_data": "CREATE TABLE \"Entries\" (\"entry_id\" SERIAL PRIMARY KEY, \"content\" TEXT, \"created\" TIMESTAMPTZ DEFAULT NOW());",
       "input_type": "sql",
+      "target_db": "postgresql"
+    }'
+    ```
+*   **Example `curl` request (CSV to MySQL DDL)**:
+    ```bash
+    curl -X POST "http://127.0.0.1:8000/api/v1/schema/generate/" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "input_data": "emp_id,emp_name,department\n101,John Doe,Engineering\n102,Jane Smith,Marketing",
+      "input_type": "csv",
+      "source_name": "employee_data",
       "target_db": "mysql"
     }'
     ```
-*   **Example `curl` request (CSV input)**:
+*   **Example `curl` request (JSON to PostgreSQL DDL)**:
     ```bash
     curl -X POST "http://127.0.0.1:8000/api/v1/schema/generate/" \
     -H "Content-Type: application/json" \
     -d '{
-      "input_data": "colA,colB,colC\n1,hello,true\n2,world,false",
-      "input_type": "csv",
-      "source_name": "my_data_from_csv",
-      "target_db": "mysql"
+      "input_data": "{\"schema_name\": \"MyPgUsersDB\", \"tables\": [{\"name\": \"employees\", \"columns\": [{\"name\": \"emp_id\", \"generic_type\": \"INTEGER\", \"constraints\":[{\"type\":\"PRIMARY_KEY\"},{\"type\":\"AUTO_INCREMENT\"}]},{\"name\":\"email\",\"generic_type\":\"STRING\", \"constraints\":[{\"type\":\"UNIQUE\"}]}]}]}",
+      "input_type": "json",
+      "target_db": "postgresql"
     }'
     ```
 
@@ -120,9 +132,9 @@ The API will typically be available at `http://127.0.0.1:8000`. You can access t
 
 The next phases for this project will involve:
 
-1.  Implementing more advanced features for SQL and CSV parsers (e.g., foreign key detection from SQL `ALTER TABLE` statements, more robust CSV type inference and dialect handling).
+1.  Implementing more advanced features for existing parsers and adapters (e.g., SQL foreign keys from `ALTER TABLE` statements, complex constraints, richer type mappings for all supported databases).
 2.  Implementing other parsers (Python ORM, NLP for natural language text, etc.).
-3.  Implementing more adapters (PostgreSQL, MongoDB, etc.).
+3.  Implementing more adapters (MongoDB, etc.).
 4.  Developing the frontend user interface for easier interaction.
 5.  Enhancing error handling, validation, and schema enrichment capabilities.
 6.  Adding features like schema visualization and direct editing.

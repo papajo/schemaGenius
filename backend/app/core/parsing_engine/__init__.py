@@ -7,111 +7,127 @@ It orchestrates the parsing of various inputs and the generation
 of database schemas.
 """
 
-from typing import Optional # Added Optional for source_name
-from .intermediate_schema import SchemaISR, TableISR, ColumnISR, ConstraintDetail # Ensure ConstraintDetail is available if needed by any parser
+from typing import Optional
+from .intermediate_schema import SchemaISR # Keep this minimal for the __init__
 from .parsers.json_parser import parse_json_input
 from .parsers.sql_parser import parse_sql_ddl_input
-from .parsers.csv_parser import parse_csv_input  # Import CSV parser
+from .parsers.csv_parser import parse_csv_input
 from .adapters.mysql_adapter import convert_isr_to_mysql_ddl
-# Placeholder for future PostgreSQL adapter import
-# from .adapters.postgres_adapter import convert_isr_to_postgres_ddl
+from .adapters.postgresql_adapter import convert_isr_to_postgresql_ddl # Import PostgreSQL adapter
 
 class ParsingEngine:
     def __init__(self):
         """
         Initializes the ParsingEngine.
-        Parsers and adapters could be registered here, possibly dynamically,
-        for greater extensibility.
+        Parsers and adapters are mapped here for dispatch.
         """
         self.parsers = {
             "json": parse_json_input,
             "sql": parse_sql_ddl_input,
             "csv": parse_csv_input,
-            # Add other parsers like "text" (NLP) when implemented
+            # "text": parse_nlp_input, # Future
         }
         self.adapters = {
             "mysql": convert_isr_to_mysql_ddl,
-            # Add other adapters like "postgresql" when implemented
+            "postgresql": convert_isr_to_postgresql_ddl,
+            "postgres": convert_isr_to_postgresql_ddl, # Alias for postgresql
+            # "mssql": convert_isr_to_mssql_ddl, # Future
         }
-        # No specific initialization needed for this basic setup.
-        pass
 
     def generate_schema_from_input(self, input_data: str, input_type: str, source_name: Optional[str] = None) -> SchemaISR:
         """
-        Processes the input data and generates an Intermediate Schema Representation (ISR).
-
-        Args:
-            input_data: The raw input string (e.g., JSON, SQL DDL, CSV data).
-            input_type: A string indicating the type of input (e.g., "json", "sql", "csv").
-            source_name: Optional name of the source (e.g., filename), primarily used by CSV parser for table naming.
-
-        Returns:
-            An instance of SchemaISR representing the generated schema.
-
-        Raises:
-            NotImplementedError: If no parser is available for the specified input_type.
-            ValueError: If the input data is invalid for the specified parser.
+        Processes the input data using the appropriate parser and generates an
+        Intermediate Schema Representation (ISR).
         """
-        print(f"ParsingEngine: Received call to generate_schema_from_input for type '{input_type}', source: '{source_name}'")
+        print(f"ParsingEngine: Generating schema from '{input_type}' input. Source: '{source_name if source_name else 'N/A'}'")
         input_type_lower = input_type.lower()
 
         parser_func = self.parsers.get(input_type_lower)
-
-        if parser_func:
-            try:
-                if input_type_lower == "csv":
-                    # CSV parser has an additional argument for table name based on source
-                    return parser_func(input_data, table_name_from_file=source_name)
-                else:
-                    return parser_func(input_data)
-            except ValueError as ve:
-                print(f"ValueError during {input_type_lower} parsing: {ve}")
-                raise
-            except Exception as e:
-                print(f"Unexpected error during {input_type_lower} parsing: {e}")
-                raise ValueError(f"Error processing {input_type_lower} input: {e}")
-        else:
+        if not parser_func:
             raise NotImplementedError(f"Parser for input type '{input_type}' is not implemented.")
+
+        try:
+            if input_type_lower == "csv":
+                return parser_func(input_data, table_name_from_file=source_name)
+            else:
+                return parser_func(input_data)
+        except ValueError as ve:
+            print(f"ValueError during '{input_type_lower}' parsing: {ve}")
+            raise # Re-raise for API layer to handle as HTTP 400
+        except Exception as e:
+            # Log the full error traceback in a real application
+            print(f"Unexpected error during '{input_type_lower}' parsing: {type(e).__name__} - {e}")
+            raise ValueError(f"Error processing '{input_type_lower}' input: {e}") # Re-raise as ValueError
 
     def convert_isr_to_target_ddl(self, isr: SchemaISR, target_db: str) -> str:
         """
-        Converts an Intermediate Schema Representation (ISR) to a target database DDL string.
+        Converts an Intermediate Schema Representation (ISR) to a target database DDL string
+        using the appropriate adapter.
         """
-        print(f"ParsingEngine: Received call to convert_isr_to_target_ddl for '{target_db}'")
+        print(f"ParsingEngine: Converting ISR to '{target_db}' DDL.")
         target_db_lower = target_db.lower()
 
         adapter_func = self.adapters.get(target_db_lower)
-
-        if adapter_func:
-            try:
-                return adapter_func(isr)
-            except Exception as e:
-                print(f"Unexpected error during DDL conversion for {target_db_lower}: {e}")
-                raise ValueError(f"Error converting ISR to DDL for {target_db_lower}: {e}")
-        else:
+        if not adapter_func:
             raise NotImplementedError(f"Adapter for target database '{target_db}' is not implemented.")
+
+        try:
+            return adapter_func(isr)
+        except Exception as e:
+            # Log the full error traceback in a real application
+            print(f"Unexpected error during DDL conversion for '{target_db_lower}': {type(e).__name__} - {e}")
+            raise ValueError(f"Error converting ISR to DDL for '{target_db_lower}': {e}") # Re-raise as ValueError
 
 # Example Usage (for direct testing of this module)
 if __name__ == '__main__':
     engine = ParsingEngine()
 
-    # Test CSV parsing
-    sample_csv_input = "header1,header2\nval1,val2\n123,45.6"
+    # Test PostgreSQL DDL Conversion from JSON
+    sample_json_input = """
+    {
+        "schema_name": "LibraryDB_PG", "version": "vPG1",
+        "tables": [
+            {
+                "name": "items",
+                "columns": [
+                    {"name": "item_id", "generic_type": "INTEGER", "constraints": [{"type": "PRIMARY_KEY"}, {"type":"AUTO_INCREMENT"}]},
+                    {"name": "item_name", "generic_type": "TEXT", "constraints": [{"type": "NOT_NULL"}]},
+                    {"name": "type", "generic_type": "ENUM_TYPE",
+                     "constraints": [{"type":"ENUM_VALUES", "details": {"values": ["book", "cd", "magazine"]}}]}
+                ]
+            }
+        ]
+    }
+    """
     try:
-        print("\\n--- Testing CSV input to MySQL DDL ---")
-        intermediate_schema_csv = engine.generate_schema_from_input(sample_csv_input, "csv", source_name="my_data.csv")
-        print(f"Parsed CSV: Found {len(intermediate_schema_csv.tables)} table(s).")
-        if intermediate_schema_csv.tables:
-            table = intermediate_schema_csv.tables[0]
-            print(f"  Table Name (from CSV source_name): {table.name}")
-            for col in table.columns:
-                print(f"    Column: {col.name} ({col.generic_type})")
+        print("\\n--- Testing JSON input to PostgreSQL DDL ---")
+        intermediate_schema_json_pg = engine.generate_schema_from_input(sample_json_input, "json")
+        print(f"Parsed JSON for PG: Schema '{intermediate_schema_json_pg.schema_name}', Version '{intermediate_schema_json_pg.version}'")
 
-        mysql_ddl_from_csv = engine.convert_isr_to_target_ddl(intermediate_schema_csv, "mysql")
-        print("MySQL DDL from CSV input:\n", mysql_ddl_from_csv)
+        pg_ddl_from_json = engine.convert_isr_to_target_ddl(intermediate_schema_json_pg, "postgresql")
+        print("PostgreSQL DDL from JSON input:\n", pg_ddl_from_json)
 
     except Exception as e:
-        print(f"Error in CSV processing: {e}")
+        print(f"Error in JSON to PostgreSQL processing: {e}")
 
-    # ... (other example tests for JSON and SQL can be kept or added here)
+    # Test SQL input to PostgreSQL DDL
+    sample_sql_input_pg = """
+    CREATE TABLE "Employees" (
+        "EmpID" SERIAL PRIMARY KEY,
+        "FullName" VARCHAR(255) NOT NULL,
+        "Department" TEXT DEFAULT 'General'
+    );
+    """
+    try:
+        print("\\n--- Testing SQL input to PostgreSQL DDL ---")
+        intermediate_schema_sql_pg = engine.generate_schema_from_input(sample_sql_input_pg, "sql")
+        print(f"Parsed SQL for PG: Found {len(intermediate_schema_sql_pg.tables)} table(s).")
+        if intermediate_schema_sql_pg.tables:
+            print(f"  Table Name: {intermediate_schema_sql_pg.tables[0].name}")
+
+        pg_ddl_from_sql = engine.convert_isr_to_target_ddl(intermediate_schema_sql_pg, "postgres") # Using alias
+        print("PostgreSQL DDL from SQL input:\n", pg_ddl_from_sql)
+    except Exception as e:
+        print(f"Error in SQL to PostgreSQL processing: {e}")
+
     print("\\n--- Example usage finished ---")
