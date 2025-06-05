@@ -5,16 +5,17 @@ SchemaGenius is an application designed to automatically generate database schem
 
 ## Current Status
 
-This repository currently contains the **initial design documents**, **basic project scaffolding**, and a **foundational API layer** for the SchemaGenius application. Key functionalities implemented include:
+This repository currently contains the **initial design documents**, **project scaffolding for backend and frontend**, a **foundational API layer**, and a **basic frontend UI** for interaction. Key functionalities implemented include:
 *   **Parsers**: JSON, basic SQL DDL, CSV, basic Python ORM (SQLAlchemy).
 *   **Adapters**: MySQL DDL, PostgreSQL DDL.
-These are accessible via an API endpoint.
+*   **API**: Endpoint for schema generation.
+*   **Frontend**: Basic input page (`InputPage.tsx`) to interact with the API via an `api.ts` service.
 
 ## Design Documents
 
 The core design of SchemaGenius is detailed in the following documents:
 *   **`final_design_document.md`**: A comprehensive document consolidating all aspects of the application's design.
-    *   (Links to individual design documents like `architecture.md`, `parsing_engine_details.md`, etc., would be listed here or are implicitly part of the final document).
+    *   (Individual documents like `architecture.md`, `parsing_engine_details.md`, etc., are part of this consolidated document).
 
 ## Project Structure
 
@@ -23,7 +24,7 @@ The initial project structure has been scaffolded as follows:
 *   **`backend/`**: Contains the Python FastAPI backend application.
     *   `app/`: Main application code.
         *   `main.py`: FastAPI app initialization.
-        *   `api/`: API endpoint definitions (e.g., schema generation).
+        *   `api/`: API endpoint definitions.
         *   `core/`: Core logic, including the `parsing_engine/`.
             *   `parsing_engine/`: Modules for parsing inputs and generating schemas.
                 *   `__init__.py`: Main `ParsingEngine` class.
@@ -33,13 +34,17 @@ The initial project structure has been scaffolded as follows:
         *   `schemas/`: Pydantic models for API request/response validation.
     *   `requirements.txt`: Backend dependencies.
     *   `tests/`: Unit and integration tests for the backend.
-        *   `api/`: Tests for API endpoints.
-        *   `parsing_engine/`: Tests for parsing logic and adapters.
 
-*   **`frontend/`**: Contains the React with TypeScript frontend application (currently placeholder).
+*   **`frontend/`**: Contains the React with TypeScript frontend application.
     *   `public/`: Static assets and `index.html`.
-    *   `src/`: Frontend source code (`.tsx` files, CSS, etc.).
-    *   `package.json`: Frontend dependencies and scripts.
+    *   `src/`: Frontend source code.
+        *   `App.tsx`: Main React application component, renders `InputPage`.
+        *   `index.tsx`: React DOM entry point.
+        *   `pages/InputPage.tsx`: Main UI for submitting schema generation requests.
+        *   `services/api.ts`: Module for backend API communication using `axios`.
+        *   `components/`: (Currently empty) For reusable UI components.
+        *   `assets/`: (Currently empty) For static assets like images, fonts.
+    *   `package.json`: Frontend dependencies and scripts (includes `axios`).
     *   `tsconfig.json`: TypeScript configuration.
     *   `.gitignore`: Node.js/React-specific ignore file.
 
@@ -68,7 +73,30 @@ The backend is built using FastAPI. To run it locally:
     ```
 The API will typically be available at `http://127.0.0.1:8000`. You can access the interactive API documentation (Swagger UI) at `http://127.0.0.1:8000/docs`.
 
-### API Endpoints
+## Running the Frontend
+
+The frontend is a React application created with Create React App (TypeScript).
+
+1.  Ensure the backend API is running (see section above).
+2.  Navigate to the `frontend/` directory (in a new terminal window):
+    ```bash
+    cd frontend
+    ```
+3.  Install dependencies (if you haven't already):
+    ```bash
+    npm install
+    # or
+    # yarn install
+    ```
+4.  Start the frontend development server:
+    ```bash
+    npm start
+    # or
+    # yarn start
+    ```
+This will usually open the application in your default web browser at `http://localhost:3000`. You should see the `InputPage` interface.
+
+## API Endpoints
 
 **POST /api/v1/schema/generate/**
 
@@ -79,32 +107,21 @@ The API will typically be available at `http://127.0.0.1:8000`. You can access t
     *   `target_db` (string, optional): Target database (e.g., "mysql", "postgresql", "postgres").
     *   `source_name` (string, optional): Suggested table name or source identifier (e.g., for CSV data).
 *   **Response Body**: `SchemaGenerationResponse` (see `backend/app/schemas/response_models.py` and interactive `/docs`)
-*   **Example `curl` request (JSON to MySQL DDL)**: (Refer to `/docs` on running server for detailed example)
-*   **Example `curl` request (SQL DDL to PostgreSQL DDL)**: (Refer to `/docs`)
-*   **Example `curl` request (CSV to MySQL DDL)**: (Refer to `/docs`)
-*   **Example `curl` request (Python ORM to MySQL DDL)**:
-    ```bash
-    curl -X POST "http://127.0.0.1:8000/api/v1/schema/generate/" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "input_data": "from sqlalchemy import Column, Integer, String\\nfrom sqlalchemy.orm import declarative_base\\nBase = declarative_base()\\nclass Product(Base):\\n    __tablename__ = '\''products'\''\\n    product_id = Column(Integer, primary_key=True)\\n    name = Column(String(100))",
-      "input_type": "python",
-      "target_db": "mysql"
-    }'
-    ```
+*   **Example `curl` requests**: (Refer to `/docs` on the running server for detailed, executable examples. Basic examples for different input types are provided in the API schema documentation.)
 
 ## Future Work
 
 The next phases for this project will involve:
 
-1.  Implementing more advanced features for existing parsers (SQL, CSV, Python ORM - e.g., parsing relationships more robustly, complex type definitions, table arguments from SQLAlchemy).
-2.  Implementing other parsers (Java JPA, NLP for natural language text, etc.).
-3.  Implementing more adapters (MongoDB, SQL Server, etc.).
-4.  Developing the frontend user interface for easier interaction.
-5.  Enhancing error handling, validation, and schema enrichment capabilities.
-6.  Adding features like schema visualization and direct editing.
-7.  Thorough testing and iteration across all components.
+1.  **Frontend Enhancements**: Implementing schema visualization, a more polished UI/UX based on `ui_ux_design.md`, schema editing capabilities, and project management.
+2.  **Backend Parser Enhancements**: Adding more advanced features to existing parsers (SQL: foreign keys from `ALTER TABLE`, indexes, complex constraints; CSV: more robust type inference, dialect options; Python ORM: relationship parsing, `__table_args__`).
+3.  **New Parsers**: Implementing parsers for Java JPA, NLP for natural language text.
+4.  **New Adapters**: Adding support for MongoDB, SQL Server, etc.
+5.  **Core Engine**: Improving error handling and validation based on `validation_error_handling.md`, and adding schema enrichment logic.
+6.  **Deployment**: Setting up CI/CD pipelines and deployment strategies as per `architecture.md` and `scalability_performance.md`.
+7.  **Documentation**: Populating the user documentation based on `application_documentation_structure.md`.
+8.  Thorough testing and iteration across all components.
 
 ---
 
-*This README provides an overview of the SchemaGenius project, its current development status, and how to run the backend API.*
+*This README provides an overview of the SchemaGenius project, its current development status, and how to run the backend API and basic frontend.*
